@@ -1,0 +1,14 @@
+body {
+  background: #f1f2f2;
+}
+
+nav {
+  background: white;
+  -webkit-box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
+          box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.small-text {
+  font-size: 14px;
+}
+/*# sourceMappingURL=styles.css.map */
