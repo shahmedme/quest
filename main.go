@@ -18,22 +18,34 @@ var templates *template.Template
 
 func main() {
 	templates = template.Must(template.ParseGlob("templates/*.html"))
-	r := mux.NewRouter()
+	templates = template.Must(templates.ParseGlob("templates/partials/*.html"))
+	templates = template.Must(templates.ParseGlob("templates/components/*.html"))
 
+	r := mux.NewRouter()
 	r.HandleFunc("/", home)
 	r.HandleFunc("/login", login)
 	r.HandleFunc("/logout", logout)
 	r.HandleFunc("/register", register)
-	r.HandleFunc("/secret", middleware.AuthRequired(secretFunc))
+	r.HandleFunc("/profile", middleware.AuthRequired(profileFunc))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
 	http.ListenAndServe(":7000", r)
 }
 
+type User struct {
+	Name string
+}
+
 func home(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/index.html", "templates/components/navbar.html", "templates/components/sidebar.html", "templates/partials/meta.html"))
-	tmpl.Execute(w, "context")
-	return
+	session, _ := sessions.Store.Get(r, "cookie-name")
+	logged := session.Values["authenticated"]
+
+	context := struct {
+		Logged bool
+		User   *User
+	}{Logged: logged.(bool), User: &User{Name: "DIU"}}
+
+	templates.ExecuteTemplate(w, "index.html", context)
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
@@ -45,15 +57,20 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func secretFunc(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "secret.html", nil)
+func profileFunc(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "profile.html", nil)
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		tmpl := template.Must(template.ParseFiles("templates/login.html", "templates/components/navbar.html", "templates/partials/meta.html"))
-		tmpl.Execute(w, "context")
-		return
+		session, _ := sessions.Store.Get(r, "cookie-name")
+
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			tmpl := template.Must(template.ParseFiles("templates/login.html", "templates/components/navbar.html", "templates/partials/meta.html"))
+			tmpl.Execute(w, "context")
+		} else {
+			http.Redirect(w, r, "/profile", http.StatusSeeOther)
+		}
 	} else if r.Method == http.MethodPost {
 		db, _ := sql.Open("mysql", "root:@(127.0.0.1:3306)/quest?parseTime=true")
 
@@ -75,7 +92,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			session.Values["authenticated"] = true
 			session.Save(r, w)
 
-			http.Redirect(w, r, "/secret", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		} else {
 			log.Fatal(err)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -85,9 +102,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 func register(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		tmpl := template.Must(template.ParseFiles("templates/register.html", "templates/components/navbar.html", "templates/partials/meta.html"))
-		tmpl.Execute(w, "context")
-		return
+		session, _ := sessions.Store.Get(r, "cookie-name")
+
+		if auth, ok := session.Values["authenticated"].(bool); auth || ok {
+			http.Redirect(w, r, "/profile", http.StatusSeeOther)
+		} else {
+			tmpl := template.Must(template.ParseFiles("templates/register.html", "templates/components/navbar.html", "templates/partials/meta.html"))
+			tmpl.Execute(w, "context")
+			return
+		}
 	} else if r.Method == http.MethodPost {
 		db, _ := sql.Open("mysql", "root:@(127.0.0.1:3306)/quest?parseTime=true")
 

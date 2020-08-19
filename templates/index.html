@@ -16,7 +16,9 @@
                     {{template "left-sidebar"}}
                 </div>
                 <div class="col-md-8">
-                    <h5>feed</h5>
+                    {{if .Logged}}
+                    <h5>statusbox</h5>
+                    {{end}}
                 </div>
                 <div class="col-md-2">
                     {{template "right-sidebar"}}
@@ -24,6 +26,7 @@
             </div>
         </div>
     </section>
+    {{template "scripts"}}
 </body>
 
 </html>
