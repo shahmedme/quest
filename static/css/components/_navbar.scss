@@ -1,0 +1,26 @@
+nav {
+    background: white;
+    box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
+
+    span.acc {
+        font-size: 30px;
+        line-height: inherit;
+    }
+
+    .btn-ask {
+        &:hover {
+            background: #f5365c;
+        }
+    }
+
+    .dropdrop {
+        background: #f1f2f7;
+        height: 31px;
+        width: 30px;
+        border-radius: 50% !important;
+        margin-top: 3px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
